@@ -2,6 +2,7 @@ import time
 import cv2
 import numpy as np
 import onnxruntime
+import torch
 
 from yolov8.utils import xywh2xyxy, nms, draw_detections
 
@@ -19,9 +20,22 @@ class YOLOv8:
         return self.detect_objects(image)
 
     def initialize_model(self, path):
-        self.session = onnxruntime.InferenceSession(path,
-                                                    providers=['CUDAExecutionProvider',
-                                                               'CPUExecutionProvider'])
+        # check if cuda is available on device
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        else:
+            self.device = torch.device('cpu')
+
+
+        if(self.device == torch.device('cuda')):
+            print("Using GPU")
+            self.session = onnxruntime.InferenceSession(path,
+                                                        providers=['CUDAExecutionProvider',
+                                                                'CPUExecutionProvider'])
+        else:
+            print("Using CPU")
+            self.session = onnxruntime.InferenceSession(path)
+            
         # Get model info
         self.get_input_details()
         self.get_output_details()
